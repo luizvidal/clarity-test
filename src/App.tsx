@@ -1,15 +1,46 @@
-import Clarity from "@microsoft/clarity";
 import { useEffect, useState } from "react";
 import "./App.css";
 import reactLogo from "./assets/react.svg";
+import { initializeClarity } from "./services/clarity";
 import viteLogo from "/vite.svg";
 
 function App() {
+	const [clarityProjectId, setClarityProjectId] = useState<string | null>(null);
+	const [clarityStatus, setClarityStatus] = useState<
+		"idle" | "loading" | "ready" | "error"
+	>("loading");
+	const [clarityError, setClarityError] = useState<string | null>(null);
+
 	const [count, setCount] = useState(0);
 
-	useEffect(() => { 
-    console.log(import.meta.env)
-		Clarity.init(import.meta.env.VITE_CLARITY_PROJECT_ID);
+	useEffect(() => {
+		let isActive = true;
+
+		initializeClarity()
+			.then((projectId) => {
+				if (!isActive) {
+					return;
+				}
+
+				setClarityProjectId(projectId);
+				setClarityStatus("ready");
+			})
+			.catch((error: unknown) => {
+				if (!isActive) {
+					return;
+				}
+
+				setClarityError(
+					error instanceof Error
+						? error.message
+						: "Failed to initialize Clarity.",
+				);
+				setClarityStatus("error");
+			});
+
+		return () => {
+			isActive = false;
+		};
 	}, []);
 
 	return (
@@ -27,8 +58,12 @@ function App() {
 				<button onClick={() => setCount((count) => count + 1)}>
 					count is {count}
 				</button>
+				<p>Clarity status: {clarityStatus}</p>
+				{clarityProjectId ? <p>Loaded project ID: {clarityProjectId}</p> : null}
+				{clarityError ? <p>Clarity error: {clarityError}</p> : null}
 				<p>
-					Edit <code>src/App.tsx</code> and save to test HMR
+					This app simulates an API call, then initializes Clarity with the
+					returned project ID.
 				</p>
 			</div>
 			<p className="read-the-docs">
